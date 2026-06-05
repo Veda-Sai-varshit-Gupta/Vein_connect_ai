@@ -42,6 +42,16 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
     CORS_ALLOW_CREDENTIALS: bool = True
 
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> list[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",") if i.strip()]
+        if isinstance(v, str) and v.startswith("["):
+            import json
+            return json.loads(v)
+        return v
+
     # ── Rate Limiting ────────────────────────────────────────────────────────
     RATE_LIMIT_PER_MINUTE: int = 100
     RATE_LIMIT_AUTHENTICATED: int = 300

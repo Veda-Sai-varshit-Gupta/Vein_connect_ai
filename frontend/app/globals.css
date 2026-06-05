@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Brand Theme Colors (Forest x Gold Guidelines) */
+  --color-brand-50: #dcfce7;   /* Forest Light - Hover fills, backgrounds */
+  --color-brand-100: #bbf7d0;  /* Forest Mid - Borders, dividers */
+  --color-brand-200: #86efac;
+  --color-brand-300: #4ade80;
+  --color-brand-400: #22c55e;  /* Forest 4 - Progress fills, success bars */
+  --color-brand-500: #166534;  /* Forest 2 (Primary) - Buttons, links, active states */
+  --color-brand-600: #15803d;
+  --color-brand-700: #166534;
+  --color-brand-800: #0f3d20;  /* Forest 1 - Dark surfaces, nav bg */
+  --color-brand-900: #0a2210;  /* Forest 0 - Deepest backgrounds */
+
+  /* Gold Color (HIL/Human attention, alerts, premium CTA) */
+  --color-accent-500: #d97706; /* Warm Gold */
+
+  /* Transfusion & Workflow Status Colors */
+  --color-status-predicted: #64748b;   /* Slate */
+  --color-status-confirmed: #166534;   /* Forest Green (Primary active/success) */
+  --color-status-scheduled: #2563eb;   /* Blue */
+  --color-status-in-progress: #d97706; /* Warm Gold (HIL/attention) */
+  --color-status-completed: #166534;   /* Forest Green */
+  --color-status-cancelled: #dc2626;   /* Red */
+  --color-status-failed: #991b1b;      /* Dark Red */
+
+  /* Urgency Level Colors */
+  --color-urgency-routine: #4b5563;
+  --color-urgency-urgent: #ea580c;
+  --color-urgency-emergency: #dc2626;
+
+  /* Blood Group Color Badges (Calibrated color indicators) */
+  --color-blood-ap: #166534;   /* Forest */
+  --color-blood-an: #86efac;   /* Forest Light */
+  --color-blood-bp: #2563eb;   /* Blue */
+  --color-blood-bn: #60a5fa;   /* Light Blue */
+  --color-blood-abp: #7c3aed;  /* Purple */
+  --color-blood-abn: #a78bfa;  /* Light Purple */
+  --color-blood-op: #059669;   /* Emerald */
+  --color-blood-on: #34d399;   /* Light Emerald */
+  
+  /* System Typography */
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-dm-sans), sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+:root {
+  --background: #fafafa;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --radius: 0.75rem; /* 12px border radius per guidelines */
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  --border: #27272a;
+  --input: #27272a;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
