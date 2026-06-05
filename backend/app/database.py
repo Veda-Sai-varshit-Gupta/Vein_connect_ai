@@ -24,6 +24,7 @@ engine = create_async_engine(
     pool_size=settings.DATABASE_POOL_SIZE,
     max_overflow=settings.DATABASE_MAX_OVERFLOW,
     pool_pre_ping=True,  # Verify connections before checkout
+    connect_args={"prepared_statement_cache_size": 0},
 )
 
 # ── Session Factory ──────────────────────────────────────────────────────────
