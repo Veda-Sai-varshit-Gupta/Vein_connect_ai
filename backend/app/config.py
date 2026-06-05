@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     DATABASE_ECHO: bool = False  # Set True to log SQL in dev
 
     # ── CORS ────────────────────────────────────────────────────────────────
-    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: Any = ["http://localhost:3000"]
     CORS_ALLOW_CREDENTIALS: bool = True
 
     @field_validator("CORS_ORIGINS", mode="before")
