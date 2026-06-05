@@ -21,10 +21,8 @@ from app.models.base import Base  # noqa: F401 — imported to register metadata
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DATABASE_ECHO,
-    pool_size=settings.DATABASE_POOL_SIZE,
-    max_overflow=settings.DATABASE_MAX_OVERFLOW,
-    pool_pre_ping=True,  # Verify connections before checkout
-    connect_args={"prepared_statement_cache_size": 0},
+    poolclass=NullPool,
+    connect_args={"prepared_statement_cache_size": 0, "statement_cache_size": 0},
 )
 
 # ── Session Factory ──────────────────────────────────────────────────────────
