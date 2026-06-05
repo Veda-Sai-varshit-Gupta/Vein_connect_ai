@@ -1,0 +1,113 @@
+# VeinConnect AI — Orchestration Docker Compose
+# Configures a multi-container network running:
+# - PostgreSQL 16-alpine (Database)
+# - Redis 7-alpine (Caching and session management)
+# - FastAPI (Python Backend)
+# - Next.js (TypeScript Frontend)
+# - Nginx (Edge Reverse Proxy & Load Balancer)
+
+version: "3.9"
+
+services:
+  # ── PostgreSQL Database ──────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: veinconnect_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: veinconnect
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: veinconnect_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # Bind to host for local administration (disable in strict prod)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U veinconnect -d veinconnect_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - veinconnect_net
+
+  # ── Redis Cache ──────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: veinconnect_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379" # Bind to host for local dev access (disable in strict prod)
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - veinconnect_net
+
+  # ── FastAPI Backend ──────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: veinconnect_backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://veinconnect:password@db:5432/veinconnect_db
+      REDIS_URL: redis://redis:6379/0
+      APP_ENV: production
+      DEBUG: "false"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - veinconnect_net
+
+  # ── Next.js Frontend ─────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: veinconnect_frontend
+    restart: unless-stopped
+    env_file:
+      - ./frontend/.env
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - veinconnect_net
+
+  # ── Nginx Edge Proxy ─────────────────────────────────────────────────────
+  proxy:
+    image: nginx:1.25-alpine
+    container_name: veinconnect_proxy
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - veinconnect_net
+
+volumes:
+  postgres_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  veinconnect_net:
+    driver: bridge

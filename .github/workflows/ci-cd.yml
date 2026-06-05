@@ -1,0 +1,128 @@
+name: VeinConnect AI CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ── LINT & UNIT TESTS STAGE ───────────────────────────────────────────────
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # ── Backend Checks
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Backend Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run Python Linting (Ruff Check)
+        run: |
+          pip install ruff
+          ruff check backend/ || echo "Lint warnings found (non-blocking)"
+
+      - name: Run Backend Unit Tests (PyTest)
+        env:
+          DATABASE_URL: sqlite+aiosqlite:///:memory: # In-memory SQLite fallback for test runner
+          SECRET_KEY: test-secret-key-for-ci-pipeline
+          APP_ENV: testing
+        run: |
+          cd backend
+          pytest -v
+
+      # ── Frontend Checks
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci || npm install --legacy-peer-deps
+
+      - name: Run Frontend Linting
+        run: |
+          cd frontend
+          npm run lint || echo "Linter warnings found (non-blocking)"
+
+  # ── DOCKER BUILD & REGISTRY STAGE ─────────────────────────────────────────
+  build-and-push:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Build & Push Backend Container
+      - name: Build and Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/backend:latest
+            ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── Build & Push Frontend Container
+      - name: Build and Push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/frontend:latest
+            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── AUTOMATED CD DEPLOY STAGE (Virtual Machine / SSH target) ───────────────
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Deploy to Host via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /opt/veinconnect
+            # Pull down the latest containers
+            docker compose pull
+            # Apply database migrations
+            docker compose run --rm backend alembic upgrade head
+            # Restart services gracefully
+            docker compose up -d --remove-orphans
+            # Prune obsolete system resources
+            docker image prune -f
