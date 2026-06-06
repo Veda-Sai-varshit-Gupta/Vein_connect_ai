@@ -34,13 +34,13 @@ class User(Base, AuditMixin):
     @property
     def is_onboarded(self) -> bool:
         if self.role == UserRole.patient:
-            return self.patient is not None
+            return self.patient is not None and self.patient.blood_group is not None
         elif self.role == UserRole.donor:
-            return self.donor is not None
+            return self.donor is not None and self.donor.blood_group is not None
         elif self.role == UserRole.coordinator:
-            return self.coordinator is not None
+            return self.coordinator is not None and self.coordinator.organization is not None
         elif self.role == UserRole.hospital:
-            return self.hospital is not None
+            return self.hospital is not None and self.hospital.registration_number is not None
         return True
 
     # ── one-to-one relationships ──

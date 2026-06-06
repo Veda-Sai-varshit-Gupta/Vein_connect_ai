@@ -20,12 +20,9 @@ forecaster = CapacityForecaster()
 class HospitalService:
 
     async def register(self, db: AsyncSession, user_id: UUID, data: HospitalCreate) -> Hospital:
-        existing = await hospital_repo.get_by_user_id(db, user_id)
-        if existing:
-            raise ConflictException("Hospital profile already exists for this account")
+        hospital = await hospital_repo.get_by_user_id(db, user_id)
 
-        hospital = await hospital_repo.create(db, {
-            "user_id": user_id,
+        hospital_data = {
             "name": data.name,
             "registration_number": data.registration_number,
             "address": data.address,
@@ -42,7 +39,15 @@ class HospitalService:
             "latitude": data.latitude,
             "longitude": data.longitude,
             "is_active": True,
-        })
+        }
+
+        if hospital:
+            hospital = await hospital_repo.update(db, hospital.id, hospital_data)
+        else:
+            hospital = await hospital_repo.create(db, {
+                "user_id": user_id,
+                **hospital_data
+            })
 
         # Create initial capacity record
         await hospital_repo.upsert_capacity(db, hospital.id, {

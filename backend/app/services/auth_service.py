@@ -75,7 +75,7 @@ class AuthService:
         elif data.role == "donor" or data.role == UserRole.donor:
             await donor_repo.create(db, profile_data)
         elif data.role == "coordinator" or data.role == UserRole.coordinator:
-            await coordinator_repo.create(db, profile_data)
+            await coordinator_repo.create(db, {**profile_data, "phone": data.phone})
         elif data.role == "hospital" or data.role == UserRole.hospital:
             await hospital_repo.create(db, profile_data)
         # ─────────────────────────────────────────────────────────────────────

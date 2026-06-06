@@ -23,7 +23,7 @@ from .enums import BloodGroup, CommunicationPreference, Gender, Language
 class Donor(Base, AuditMixin):
     __tablename__ = "donors"
     __table_args__ = (
-        CheckConstraint("age >= 18", name="ck_donors_age_min_18"),
+        CheckConstraint("age IS NULL OR age >= 18", name="ck_donors_age_min_18"),
         CheckConstraint("max_travel_distance_km > 0", name="ck_donors_distance_positive"),
         CheckConstraint(
             "reliability_score >= 0 AND reliability_score <= 100",
@@ -40,13 +40,13 @@ class Donor(Base, AuditMixin):
         unique=True,
         nullable=False,
     )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    age: Mapped[int] = mapped_column(Integer, nullable=False)
-    gender: Mapped[Gender] = mapped_column(
-        SAEnum(Gender, name="gender", create_type=False), nullable=False
+    name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    gender: Mapped[Gender | None] = mapped_column(
+        SAEnum(Gender, name="gender", create_type=False), nullable=True
     )
-    blood_group: Mapped[BloodGroup] = mapped_column(
-        SAEnum(BloodGroup, name="bloodgroup", create_type=False), nullable=False
+    blood_group: Mapped[BloodGroup | None] = mapped_column(
+        SAEnum(BloodGroup, name="bloodgroup", create_type=False), nullable=True
     )
     last_donation_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     total_donations: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

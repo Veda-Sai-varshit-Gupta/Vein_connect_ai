@@ -21,17 +21,23 @@ user_repo = UserRepository()
 class CoordinatorService:
 
     async def register(self, db: AsyncSession, user_id: UUID, data: CoordinatorCreate) -> Coordinator:
-        if await coordinator_repo.get_by_user_id(db, user_id):
-            raise ConflictException("Coordinator profile already exists for this account")
+        coordinator = await coordinator_repo.get_by_user_id(db, user_id)
 
-        return await coordinator_repo.create(db, {
-            "user_id": user_id,
+        coordinator_data = {
             "name": data.name,
             "phone": data.phone,
             "organization": data.organization,
             "assigned_region": data.assigned_region,
             "approval_status": ApprovalStatus.approved,
-        })
+        }
+
+        if coordinator:
+            return await coordinator_repo.update(db, coordinator.id, coordinator_data)
+        else:
+            return await coordinator_repo.create(db, {
+                "user_id": user_id,
+                **coordinator_data
+            })
 
     async def get_coordinator(self, db: AsyncSession, coordinator_id: UUID) -> Coordinator:
         coord = await coordinator_repo.get_by_id(db, coordinator_id)

@@ -22,8 +22,8 @@ class Coordinator(Base, AuditMixin):
         unique=True,
         nullable=False,
     )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     organization: Mapped[str | None] = mapped_column(String(255), nullable=True)
     assigned_region: Mapped[str | None] = mapped_column(String(255), nullable=True)
     approval_status: Mapped[ApprovalStatus] = mapped_column(

@@ -25,11 +25,9 @@ response_engine = ResponseLikelihoodEngine()
 class DonorService:
 
     async def register(self, db: AsyncSession, user_id: UUID, data: DonorCreate) -> Donor:
-        if await donor_repo.get_by_user_id(db, user_id):
-            raise ConflictException("Donor profile already exists for this account")
+        donor = await donor_repo.get_by_user_id(db, user_id)
 
-        return await donor_repo.create(db, {
-            "user_id": user_id,
+        donor_data = {
             "name": data.name,
             "age": data.age,
             "gender": data.gender,
@@ -46,7 +44,15 @@ class DonorService:
             "reliability_score": 50.0,  # Default neutral score
             "is_available": True,
             "total_donations": 0,
-        })
+        }
+
+        if donor:
+            return await donor_repo.update(db, donor.id, donor_data)
+        else:
+            return await donor_repo.create(db, {
+                "user_id": user_id,
+                **donor_data
+            })
 
     async def get_donor(self, db: AsyncSession, donor_id: UUID) -> Donor:
         donor = await donor_repo.get_by_id(db, donor_id)

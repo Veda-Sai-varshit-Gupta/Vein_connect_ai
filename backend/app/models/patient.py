@@ -13,7 +13,7 @@ from .enums import BloodGroup, Gender, ThalassemiaType
 class Patient(Base, AuditMixin):
     __tablename__ = "patients"
     __table_args__ = (
-        CheckConstraint("age > 0", name="ck_patients_age_positive"),
+        CheckConstraint("age IS NULL OR age > 0", name="ck_patients_age_positive"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -25,20 +25,20 @@ class Patient(Base, AuditMixin):
         unique=True,
         nullable=False,
     )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    age: Mapped[int] = mapped_column(Integer, nullable=False)
-    gender: Mapped[Gender] = mapped_column(
-        SAEnum(Gender, name="gender", create_type=False), nullable=False
+    name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    gender: Mapped[Gender | None] = mapped_column(
+        SAEnum(Gender, name="gender", create_type=False), nullable=True
     )
     address: Mapped[str | None] = mapped_column(String(500), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     state: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    blood_group: Mapped[BloodGroup] = mapped_column(
-        SAEnum(BloodGroup, name="bloodgroup", create_type=False), nullable=False
+    blood_group: Mapped[BloodGroup | None] = mapped_column(
+        SAEnum(BloodGroup, name="bloodgroup", create_type=False), nullable=True
     )
-    thalassemia_type: Mapped[ThalassemiaType] = mapped_column(
+    thalassemia_type: Mapped[ThalassemiaType | None] = mapped_column(
         SAEnum(ThalassemiaType, name="thalassemiatype", create_type=False),
-        nullable=False,
+        nullable=True,
     )
     last_transfusion_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     avg_transfusion_interval_days: Mapped[int] = mapped_column(

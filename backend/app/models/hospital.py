@@ -32,13 +32,13 @@ class Hospital(Base, AuditMixin):
         unique=True,
         nullable=False,
     )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    registration_number: Mapped[str] = mapped_column(
-        String(100), unique=True, nullable=False
+    name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    registration_number: Mapped[str | None] = mapped_column(
+        String(100), unique=True, nullable=True
     )
-    address: Mapped[str] = mapped_column(String(500), nullable=False)
-    city: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
-    state: Mapped[str] = mapped_column(String(100), nullable=False)
+    address: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    city: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    state: Mapped[str | None] = mapped_column(String(100), nullable=True)
     total_transfusion_beds: Mapped[int] = mapped_column(
         Integer, default=0, nullable=False
     )

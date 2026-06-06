@@ -24,12 +24,10 @@ predictor = TransfusionPredictor()
 class PatientService:
 
     async def register(self, db: AsyncSession, user_id: UUID, data: PatientCreate) -> Patient:
-        """Create patient profile linked to user account."""
-        if await patient_repo.get_by_user_id(db, user_id):
-            raise ConflictException("Patient profile already exists for this account")
+        """Create or update patient profile linked to user account."""
+        patient = await patient_repo.get_by_user_id(db, user_id)
 
-        patient = await patient_repo.create(db, {
-            "user_id": user_id,
+        patient_data = {
             "name": data.name,
             "age": data.age,
             "gender": data.gender,
@@ -44,11 +42,27 @@ class PatientService:
             "emergency_contact_phone": data.emergency_contact_phone,
             "data_sharing_consent": data.data_sharing_consent,
             "emergency_consent": data.emergency_consent,
-        })
+        }
+
+        if patient:
+            patient = await patient_repo.update(db, patient.id, patient_data)
+        else:
+            patient = await patient_repo.create(db, {
+                "user_id": user_id,
+                **patient_data
+            })
 
         # Save hospital preferences
         from app.repositories.hospital_repo import HospitalRepository
         hosp_repo = HospitalRepository()
+        
+        # Clear existing preferences first
+        from sqlalchemy import delete
+        await db.execute(
+            delete(PatientHospitalPreference).where(PatientHospitalPreference.patient_id == patient.id)
+        )
+        await db.flush()
+
         for pref in data.hospital_preferences:
             if not await hosp_repo.exists(db, id=pref.hospital_id):
                 raise NotFoundException("Hospital", str(pref.hospital_id))
@@ -58,6 +72,7 @@ class PatientService:
                 preference_order=pref.preference_order,
             ))
         await db.flush()
+        await db.refresh(patient)
         return patient
 
     async def get_patient(self, db: AsyncSession, patient_id: UUID) -> Patient:
