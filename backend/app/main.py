@@ -27,7 +27,17 @@ from app.middleware.rate_limiter import RateLimiterMiddleware
 async def lifespan(app: FastAPI):
     """Startup and shutdown logic."""
     print(f"[VeinConnect AI] Starting up [{settings.APP_ENV}]")
-    # Future: Initialize Redis connection pool, AI model loading, etc.
+    
+    # ── Automated Production DB Initialization ───────────────────────────────
+    from app.database import create_tables
+    try:
+        print("[VeinConnect AI] Initializing database tables...")
+        await create_tables()
+        print("[VeinConnect AI] Database tables initialized successfully!")
+    except Exception as e:
+        print(f"[VeinConnect AI] CRITICAL: Database initialization failed: {e}")
+    # ─────────────────────────────────────────────────────────────────────────
+
     yield
     print("[VeinConnect AI] Shutting down")
 
