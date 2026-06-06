@@ -18,16 +18,31 @@ from app.core.security import (
 from app.models.enums import UserRole
 from app.repositories.user_repo import UserRepository
 from app.repositories.wallet_repo import WalletRepository
+
+# ── IMPORT PROFILE REPOSITORIES ──────────────────────────────────────────────
+from app.repositories.patient_repo import PatientRepository
+from app.repositories.donor_repo import DonorRepository
+from app.repositories.coordinator_repo import CoordinatorRepository
+from app.repositories.hospital_repo import HospitalRepository
+# ─────────────────────────────────────────────────────────────────────────────
+
 from app.schemas.auth import LoginRequest, SignupRequest, TokenResponse
 
 user_repo = UserRepository()
 wallet_repo = WalletRepository()
 
+# ── INITIALIZE REPOSITORIES ──────────────────────────────────────────────────
+patient_repo = PatientRepository()
+donor_repo = DonorRepository()
+coordinator_repo = CoordinatorRepository()
+hospital_repo = HospitalRepository()
+# ─────────────────────────────────────────────────────────────────────────────
+
 
 class AuthService:
 
     async def signup(self, db: AsyncSession, data: SignupRequest) -> TokenResponse:
-        """Register a new user. Creates user + wallet. Returns token pair."""
+        """Register a new user. Creates user + wallet + role profile. Returns token pair."""
         # Check email uniqueness
         if await user_repo.get_by_email(db, data.email):
             raise ConflictException(f"An account with email '{data.email}' already exists")
@@ -48,6 +63,22 @@ class AuthService:
 
         # Create wallet for all users (patients get assistance credits, donors get reimbursements)
         await wallet_repo.create_wallet(db, user.id)
+
+        # ── AUTOMATIC PROFILE CREATION BASED ON ROLE ─────────────────────────
+        profile_data = {
+            "user_id": user.id,
+            "name": data.email.split("@")[0].capitalize(), # Fallback initial string name
+        }
+
+        if data.role == "patient" or data.role == UserRole.patient:
+            await patient_repo.create(db, profile_data)
+        elif data.role == "donor" or data.role == UserRole.donor:
+            await donor_repo.create(db, profile_data)
+        elif data.role == "coordinator" or data.role == UserRole.coordinator:
+            await coordinator_repo.create(db, profile_data)
+        elif data.role == "hospital" or data.role == UserRole.hospital:
+            await hospital_repo.create(db, profile_data)
+        # ─────────────────────────────────────────────────────────────────────
 
         return create_token_pair(user.id, user.role)
 
